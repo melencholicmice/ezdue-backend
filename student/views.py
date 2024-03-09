@@ -1,5 +1,6 @@
 import jwt
 from os import getenv
+from datetime import datetime, timedelta
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from student.msal_plugin import MsLoginPlugin
@@ -34,7 +35,7 @@ class StudentLogin(APIView):
                 pass
 
         if correct_token:
-            response.data  = {"message":"Login successful"}
+            response.data  = {"message":"Login successful."}
             response.status_code = 200
             return response
 
@@ -72,13 +73,27 @@ class StudentLogin(APIView):
             response.status_code = 401
             return response
 
-        if not self.ms_plugin.validate_profile_data(user_data=profile_data):
+        student_instance = self.ms_plugin.validate_profile_data(user_data=profile_data)
+        if not student_instance:
             response.data = {"message":"User not found in database, please contact admin"}
             response.status_code = 404
             return response
 
-        response.data = profile_data
-        response.status_code = 200
+        payload = {
+            "institute_email":student_instance.institute_email,
+            "roll_number":student_instance.roll_number,
+            "exp": datetime.utcnow() + timedelta(days=2),
+            "iat": datetime.utcnow()
+        }
+
+        try:
+            token = jwt.encode(payload, getenv("COOKIE_ENCRYPTION_SECRET") or "fallback_secret", algorithm='HS256')
+            response.set_cookie(key='Authorization', value=token, httponly=True, samesite=None)
+            response.data = {"message":"login successful"}
+            response.status_code = 200
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, please try again after some time"}
+            response.status_code = 500
+
         return response
-
-

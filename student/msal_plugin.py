@@ -18,7 +18,7 @@ class MsLoginPlugin:
         params = {
             'client_id': self.client_id,
             'response_type': 'code',
-            'scope': ' '.join(self.SCOPES)
+            'scopes': self.SCOPES,
         }
         authorization_url = self.client.get_authorization_request_url(**params)
         return authorization_url
@@ -38,7 +38,6 @@ class MsLoginPlugin:
         }
 
         response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
-
         if response.status_code == 200:
             return response.json()
         else:
@@ -48,8 +47,8 @@ class MsLoginPlugin:
         email = user_data.get('mail')
         if email:
             try:
-                student = Student.objects.get(email=email)
-                return True
+                student = Student.objects.get(institute_email=email)
+                return student
             except Student.DoesNotExist:
                 return False
         else:
