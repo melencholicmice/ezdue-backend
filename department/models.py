@@ -36,7 +36,6 @@ class DepartmentUser(TimestampMixin):
     deactivated_on = models.DateTimeField(null=True,default=None)
 
     def save(self,*args,**kwargs):
-        print(self.__dict__)
         if self.password:
             self.password = hash_password(self.password)
         super(DepartmentUser,self).save(*args,**kwargs)

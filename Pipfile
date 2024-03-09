@@ -7,6 +7,9 @@ name = "pypi"
 django = "*"
 msal = "*"
 bcrypt = "*"
+djangorestframework = "*"
+pydantic = "*"
+pyjwt = "*"
 
 [dev-packages]
 

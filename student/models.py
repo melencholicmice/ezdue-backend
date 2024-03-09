@@ -19,7 +19,7 @@ class Student(TimestampMixin):
 
     joining_year = models.SmallIntegerField(null=False)
 
-    leaving_year = models.SmallIntegerField(null=False)
+    leaving_year = models.SmallIntegerField(null=True)
 
     role = models.CharField(max_length=16,choices=Role.choices)
 
