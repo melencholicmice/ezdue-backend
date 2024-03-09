@@ -2,7 +2,7 @@ import requests
 import jwt
 from msal import ConfidentialClientApplication
 from django.conf import settings
-import json
+
 
 client_secret = ""
 app_id = ""
