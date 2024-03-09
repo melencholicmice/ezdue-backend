@@ -11,7 +11,7 @@ SCOPES = ['User.Read']
 class MsLoginPlugin:
     def __init__(self):
         self.client = ConfidentialClientApplication(client_id=app_id, client_credential=client_secret)
-    
+
     def get_auth_url(self):
         params = {
             'client_id': app_id,
@@ -41,10 +41,10 @@ class MsLoginPlugin:
             return response.json()
         else:
             return None
-        
+
 
     def validate_profile_data(self, user_data):
-        email = user_data.get('mail')  
+        email = user_data.get('mail')
         if email:
             try:
                 user = user.objects.get(email=email)

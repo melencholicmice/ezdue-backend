@@ -1,6 +1,6 @@
 from django.urls import path
-from student.views import StudentLoginViews
+from student.views import StudentLogin
 
 student_endpoints = [
-    path('login', StudentLoginViews.as_view())
+    path('login', StudentLogin.as_view())
 ]
