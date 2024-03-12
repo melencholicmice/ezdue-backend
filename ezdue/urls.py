@@ -17,8 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from student.urls import student_endpoints
+from student.views import GetStudents
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('student/', include(student_endpoints))
+    path('student/', include(student_endpoints)),
+    path('students/', GetStudents.as_view(), name='get_students')
 ]
