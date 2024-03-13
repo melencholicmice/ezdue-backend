@@ -40,8 +40,8 @@ class DepartmentLogin(APIView):
         try:
             department_user = DepartmentUser.objects.get(username=username)
         except Exception as e:
-            response.data = {"message":"Invalid credentials, user not found"}
-            response.status_code = 404
+            response.data = {"message":"Invalid credentials, please try again"}
+            response.status_code = 401
             return response
 
         if not verify_password(
@@ -116,6 +116,30 @@ class AddStudentToDepartment(APIView):
             response.status_code = 500
 
         return response
+
+class GetDepartmentStudents(APIView):
+    DEFAULT_LIMIT = 10
+
+    def add_to_filter_obj(key,value,obj):
+        obj[key] = value
+        return value
+
+    @DepartmentValidator()
+    def get(self,request):
+        # filter_obj = {}
+        # cursor = request.query_params.get("cursor")
+        # limit = request.query_params.get("limit")
+        # if not limit:
+        #     limit = self.DEFAULT_LIMIT
+
+        # role = self.add_to_filter_obj("role",request.query_params.get("role"),filter_obj)
+        ...
+
+
+
+
+
+
 
 
 

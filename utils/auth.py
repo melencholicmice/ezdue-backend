@@ -58,8 +58,12 @@ class StudentValidator:
     def __call__(self,func):
         def wrapper(self,*args,**kwargs):
             response = Response()
+
             try:
-                request = args[1]
+                if len(args) == 1:
+                    request = args[0]
+                else:
+                    request = args[1]
             except:
                 response.data = {"message":"Internal server error"}
                 response.status_code = 500

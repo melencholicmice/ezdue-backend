@@ -9,7 +9,9 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from student.models import Student
+from department.models import DepartmentStudentsMapping
 from utils.validator import ValidateSchema
+from utils.auth import StudentValidator
 from student.schema import StudentLoginSchema
 
 class StudentLogin(APIView):
@@ -31,7 +33,7 @@ class StudentLogin(APIView):
                 student = Student.objects.get(roll_number=payload["roll_number"])
                 if student:
                     correct_token = True
-            except jwt.ExpiredSignatureError:
+            except:
                 pass
 
         if correct_token:
@@ -96,4 +98,30 @@ class StudentLogin(APIView):
             response.data = {"message":"Internal server error, please try again after some time"}
             response.status_code = 500
 
+        return response
+
+class StudentDepartmentData(APIView):
+    @StudentValidator()
+    def get(self,request):
+        response = Response()
+        try:
+            department_data = DepartmentStudentsMapping.objects.filter(
+                student=request.student
+            )
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        department_data_list = []
+        for obj in department_data:
+            data_obj = {
+                "department_name":obj.department.name,
+                "allow_certificate_generation":obj.allow_certificate_generation
+            }
+            department_data_list.append(data_obj)
+
+        response.data = department_data_list
+        response.status_code = 200
         return response
