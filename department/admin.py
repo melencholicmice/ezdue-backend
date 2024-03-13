@@ -1,6 +1,9 @@
 from django.contrib import admin
-from department.models import Department, DepartmentUser
-
+from department.models import (
+    Department,
+    DepartmentUser,
+    DepartmentStudentsMapping
+)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = (
         'id',
@@ -23,5 +26,6 @@ class DepartmentUserAdmin(admin.ModelAdmin):
 
 admin.site.register(Department,DepartmentAdmin)
 admin.site.register(DepartmentUser,DepartmentUserAdmin)
+admin.site.register(DepartmentStudentsMapping)
 
 

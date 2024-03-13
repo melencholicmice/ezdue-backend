@@ -3,10 +3,17 @@ import jwt
 import datetime
 from django.shortcuts import render
 from utils.crypto import verify_password
-from department.models import DepartmentUser
+from department.models import (
+    DepartmentUser,
+    DepartmentStudentsMapping
+)
+from student.models import Student
 from utils.auth import DepartmentValidator
 from utils.validator import ValidateSchema
-from department.schema import LoginSchema
+from department.schema import (
+    LoginSchema,
+    AddStudentToDepartmentSchema
+)
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -56,5 +63,59 @@ class DepartmentLogin(APIView):
         response.set_cookie(key='Authorization', value=token, httponly=True, samesite=None)
         response.data = {"message":"Login Succesful"}
         return response
+
+class AddStudentToDepartment(APIView):
+    @DepartmentValidator()
+    @ValidateSchema(AddStudentToDepartmentSchema)
+    def post(self,request):
+        student_roll_number = request.data['roll_number']
+        student_roll_number = student_roll_number.lower()
+        response = Response()
+
+        try:
+            student = Student.objects.get(roll_number=student_roll_number)
+        except Student.DoesNotExist as e:
+            response.data = {"message":"Student with given data does not exist"}
+            response.status_code = 404
+            return response
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        try:
+            existing_mapping = DepartmentStudentsMapping.objects.get(
+                student = student,
+                department = request.department_user.department
+            )
+            response.data = {"message":"This student already exists in this department"}
+            response.status_code = 401
+            return response
+        except DepartmentStudentsMapping.DoesNotExist as e:
+            pass
+        except Exception as e:
+            print(str(e))
+            print(existing_mapping.__dict__)
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        try:
+            mapping = DepartmentStudentsMapping.objects.create(
+                student = student,
+                department = request.department_user.department
+            )
+            response.data = {"message":"Student added to department"}
+            response.status_code = 201
+        except Exception as e:
+            print(str(e))
+            response.data = {
+                "message":"Failed to add student, please try again later if issue persists please contact admin"
+                }
+            response.status_code = 500
+
+        return response
+
 
 

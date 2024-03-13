@@ -29,3 +29,7 @@ class Student(TimestampMixin):
 
     deactivated_on = models.DateTimeField(null=True,default=None)
 
+    def save(self,*args,**kwargs):
+        self.roll_number = self.roll_number.lower()
+        super(Student,self).save(*args,**kwargs)
+
