@@ -1,6 +1,7 @@
 from django.db import models
 from uuid import uuid4
 from core.db.timestamp_mixin import TimestampMixin
+from student.models import Student
 from utils.crypto import hash_password
 
 class Department(TimestampMixin):
@@ -36,8 +37,30 @@ class DepartmentUser(TimestampMixin):
     deactivated_on = models.DateTimeField(null=True,default=None)
 
     def save(self,*args,**kwargs):
-        print(self.__dict__)
         if self.password:
             self.password = hash_password(self.password)
         super(DepartmentUser,self).save(*args,**kwargs)
 
+
+class DepartmentStudentsMapping(models.Model):
+
+    id = models.UUIDField(primary_key=True, default=uuid4)
+
+    student = models.ForeignKey(
+        Student,
+        null=False,
+        on_delete=models.CASCADE
+    )
+
+    department = models.ForeignKey(
+        Department,
+        null=False,
+        on_delete=models.CASCADE
+    )
+
+    allow_certificate_generation = models.BooleanField(
+        default=False
+    )
+
+    def __str__(self):
+        return f"{self.department.name} + {self.student.roll_number}"

@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from student.urls import student_endpoints
-from student.views import GetStudents
+from due.urls import due_endpoints
+from department.urls import department_endpoints
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('student/', include(student_endpoints)),
-    path('students/', GetStudents.as_view(), name='get_students')
+    path('due/', include(due_endpoints)),
+    path('department/', include(department_endpoints))
 ]

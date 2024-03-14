@@ -19,7 +19,7 @@ class Student(TimestampMixin):
 
     joining_year = models.SmallIntegerField(null=False)
 
-    leaving_year = models.SmallIntegerField(null=False)
+    leaving_year = models.SmallIntegerField(null=True)
 
     role = models.CharField(max_length=16,choices=Role.choices)
 
@@ -28,4 +28,8 @@ class Student(TimestampMixin):
     is_active = models.BooleanField(default=True)
 
     deactivated_on = models.DateTimeField(null=True,default=None)
+
+    def save(self,*args,**kwargs):
+        self.roll_number = self.roll_number.lower()
+        super(Student,self).save(*args,**kwargs)
 

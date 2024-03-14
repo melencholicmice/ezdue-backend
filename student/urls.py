@@ -1,10 +1,9 @@
 from django.urls import path
-from student.views import StudentLoginViews
-from .views import GetStudents
+from student.views import StudentLogin, StudentDepartmentData
 
 student_endpoints = [
-    path('login', StudentLoginViews.as_view()),
-    path('students/', GetStudents.as_view(), name='get_students')
+    path('login', StudentLogin.as_view()),
+    path('all-department-data-min',StudentDepartmentData.as_view())
 ]
 
 
