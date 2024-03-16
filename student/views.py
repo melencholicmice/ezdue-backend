@@ -12,7 +12,10 @@ from student.models import Student
 from department.models import DepartmentStudentsMapping
 from utils.validator import ValidateSchema
 from utils.auth import StudentValidator
-from student.schema import StudentLoginSchema
+from student.schema import (
+    StudentLoginSchema,
+    StudentLoginBypassSchema
+)
 
 class StudentLogin(APIView):
     def __init__(self):
@@ -99,6 +102,34 @@ class StudentLogin(APIView):
             response.status_code = 500
 
         return response
+
+class StudentLoginBypass(APIView):
+    @ValidateSchema(StudentLoginBypassSchema)
+    def post(self,request):
+        roll_number = request.data['roll_number']
+        institute_email = request.data['institute_email']
+        response = Response()
+        
+        payload = {
+            "institute_email":institute_email,
+            "roll_number":roll_number,
+            "exp": datetime.utcnow() + timedelta(days=2),
+            "iat": datetime.utcnow()
+        }
+
+        try:
+            token = jwt.encode(payload, getenv("COOKIE_ENCRYPTION_SECRET") or "fallback_secret", algorithm='HS256')
+            response.set_cookie(key='Authorization', value=token, httponly=True, samesite=None)
+            response.data = {"message":"login successful"}
+            response.status_code = 200
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, please try again after some time"}
+            response.status_code = 500
+
+        return response
+
+
 
 class StudentDepartmentData(APIView):
     @StudentValidator()
