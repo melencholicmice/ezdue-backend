@@ -94,8 +94,9 @@ class StudentValidator:
                 return response
 
             try:
-                result = func(*args, **kwargs)
+                result = func(request,*args, **kwargs)
             except Exception as e:
+                print(str(e))
                 raise e
             return result
         return wrapper
