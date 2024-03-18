@@ -6,3 +6,6 @@ class LoginSchema(BaseModel):
 
 class AddStudentToDepartmentSchema(BaseModel):
     roll_number:str
+
+class ToggleCertificateGenerationPermissionSchema(BaseModel):
+    roll_number:str

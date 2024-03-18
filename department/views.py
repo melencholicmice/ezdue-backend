@@ -18,7 +18,8 @@ from utils.auth import DepartmentValidator
 from utils.validator import ValidateSchema
 from department.schema import (
     LoginSchema,
-    AddStudentToDepartmentSchema
+    AddStudentToDepartmentSchema,
+    ToggleCertificateGenerationPermissionSchema
 )
 from django.db.models import Count
 from django.core.serializers import serialize
@@ -120,7 +121,7 @@ class AddStudentToDepartment(APIView):
             print(str(e))
             response.data = {
                 "message":"Failed to add student, please try again later if issue persists please contact admin"
-                }
+            }
             response.status_code = 500
 
         return response
@@ -272,4 +273,52 @@ class GetDues(APIView):
             "previous": previous_url
         }
         response.status_code = 200
+        return response
+
+class ToggleCertificateGenerationPermission(APIView):
+    @ValidateSchema(ToggleCertificateGenerationPermissionSchema)
+    @DepartmentValidator()
+    def post(self,request):
+        roll_number = request.data.get('roll_number')
+        response = Response()
+
+        try:
+            student = Student.objects.get(roll_number=roll_number)
+        except Student.DoesNotExist:
+            response.data = {"message":"Student does not exist"}
+            response.status_code = 404
+            return response
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        try:
+            mapping = DepartmentStudentsMapping.objects.get(
+                student = student,
+                department = request.department_user.department
+            )
+        except DepartmentStudentsMapping.DoesNotExist:
+            response.data = {"message":"student does not exist in department"}
+            response.status_code = 404
+            return response
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        try:
+            mapping.allow_certificate_generation = not mapping.allow_certificate_generation
+            mapping.save()
+            response.data = {
+                "roll_number": mapping.student.roll_number,
+                "allow_certificate_generation":mapping.allow_certificate_generation
+            }
+            response.status_code = 200
+        except Exception as e:
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+        
         return response

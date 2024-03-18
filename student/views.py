@@ -9,13 +9,15 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from student.models import Student
-from department.models import DepartmentStudentsMapping
+from department.models import DepartmentStudentsMapping, Department
 from utils.validator import ValidateSchema
 from utils.auth import StudentValidator
 from student.schema import (
     StudentLoginSchema,
-    StudentLoginBypassSchema
+    StudentLoginBypassSchema,
+    GenerateNoDueCertificateSchema
 )
+
 
 class StudentLogin(APIView):
     def __init__(self):
@@ -23,7 +25,6 @@ class StudentLogin(APIView):
             client_id=getenv("MSAL_CLIENT_ID"),
             client_secret=getenv("MSAL_CLIENT_SECRET")
         )
-
 
     def get(self,request):
         response = Response()
@@ -109,7 +110,7 @@ class StudentLoginBypass(APIView):
         roll_number = request.data['roll_number']
         institute_email = request.data['institute_email']
         response = Response()
-        
+
         payload = {
             "institute_email":institute_email,
             "roll_number":roll_number,
@@ -155,4 +156,47 @@ class StudentDepartmentData(APIView):
 
         response.data = department_data_list
         response.status_code = 200
+        return response
+
+class GenerateNoDueCertificate(APIView):
+
+    @ValidateSchema(GenerateNoDueCertificateSchema)
+    @StudentValidator()
+    def post(self,request):
+        department_id = request.data.get('department_id')
+        response = Response()
+
+        try:
+            department = Department.objects.get(id=department_id)
+        except Department.DoesNotExist:
+            response.data = {"message":"Department not found, Invalid request"}
+            response.status_code = 404
+            return response
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, Contact admin"}
+            response.status_code = 500
+            return response
+
+        try:
+            mapping = DepartmentStudentsMapping.objects.get(student=request.student, department=department)
+        except DepartmentStudentsMapping.DoesNotExist as e:
+            response.data = {"message":"You are not added to this department"}
+            response.status_code = 401
+            return response
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, Contact admin"}
+            response.status_code = 500
+            return response
+
+        if not mapping.allow_certificate_generation:
+            response.data = {"message":"You are not allowed to auto-generate certificate yet, please contact admin"}
+            response.status_code = 401
+            return response
+
+        # :TODO: Generate certificate
+
+        response.data = {"message":"Your certificate is being generated please check your vault"}
+        response.status_code = 201
         return response
