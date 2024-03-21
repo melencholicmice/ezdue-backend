@@ -15,17 +15,19 @@ from department.models import (
 from due.models import Due
 from student.models import Student
 from utils.auth import DepartmentValidator
-from utils.validator import ValidateSchema
+from utils.validator import ValidateSchema, TemplateVariables
 from department.schema import (
     LoginSchema,
     AddStudentToDepartmentSchema,
-    ToggleCertificateGenerationPermissionSchema
+    ToggleCertificateGenerationPermissionSchema,
+    EditCertificateHTMLTemplateSchema
 )
 from django.db.models import Count
 from django.core.serializers import serialize
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
+from django.http import HttpResponse, JsonResponse
+from department.models import Department
 
 class DepartmentLogin(APIView):
     @DepartmentValidator()
@@ -320,5 +322,34 @@ class ToggleCertificateGenerationPermission(APIView):
         except Exception as e:
             response.data = {"message":"Internal server error"}
             response.status_code = 500
-        
+
         return response
+
+class EditCertificateHTMLTemplate(APIView):
+    @DepartmentValidator()
+    def get(self,request):
+        return HttpResponse(request.department_user.department.certificate_pdf_template)
+
+    @DepartmentValidator()
+    @ValidateSchema(EditCertificateHTMLTemplateSchema)
+    def post(self,request):
+        edited_template = request.data.get('html_content')
+        response = Response()
+
+        try:
+            department_instance = Department.objects.get(id=request.department_user.department.id)
+            department_instance.certificate_pdf_template = edited_template
+            department_instance.save()
+            response.data = {"message":"Succesfully edited template"}
+            response.status_code = 200
+        except Exception as e:
+            response.data = {"message":"Internal server error, contact admin"}
+            response.status_code = 500
+
+        return response
+
+def get_template_variables(request):
+    if request.method == 'GET':
+        return JsonResponse({"variables":TemplateVariables.get_available_variables()},status=200)
+    else:
+        return JsonResponse({"message":"This method is not allowed"},status=405)

@@ -1,5 +1,7 @@
 from pydantic import ValidationError
 from rest_framework.response import Response
+from json import loads
+
 class ValidateSchema:
     def __init__(self, arg1):
         self.schema = arg1
@@ -19,7 +21,7 @@ class ValidateSchema:
                     response = Response()
                     response.data = {
                         "error_count": e.error_count(),
-                        "error":e.json()
+                        "error":loads(e.json())
                     }
                     response.status_code = 403
                     return response
@@ -29,3 +31,44 @@ class ValidateSchema:
                 raise e
             return result
         return wrapper
+
+class TemplateVariables:
+
+    @classmethod
+    def get_variable_data_from_mapping(cls, mapping):
+        return {
+            "student_first_name": mapping.student.first_name,
+            "student_last_name": mapping.student.last_name,
+            "student_academic_program": mapping.student.academic_program,
+            "student_institute_email": mapping.student.institute_email,
+            "student_joining_year": mapping.student.joining_year,
+            "student_leaving_year": mapping.student.leaving_year,
+            "department_name": mapping.department.name,
+            "department_email": mapping.department.email,
+        }
+
+    @classmethod
+    def get_available_variables(cls):
+        return [
+            "student_first_name",
+            "student_last_name",
+            "student_academic_program",
+            "student_institute_email",
+            "student_joining_year",
+            "student_leaving_year",
+            "department_name",
+            "department_email",
+        ]
+
+    @classmethod
+    def get_variables_from_student_and_department(cls,student,department):
+        return {
+            "student_first_name": student.first_name,
+            "student_last_name": student.last_name,
+            "student_academic_program": student.academic_program,
+            "student_institute_email": student.institute_email,
+            "student_joining_year": student.joining_year,
+            "student_leaving_year": student.leaving_year,
+            "department_name": department.name,
+            "department_email": department.email,
+        }

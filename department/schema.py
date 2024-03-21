@@ -9,3 +9,6 @@ class AddStudentToDepartmentSchema(BaseModel):
 
 class ToggleCertificateGenerationPermissionSchema(BaseModel):
     roll_number:str
+
+class EditCertificateHTMLTemplateSchema(BaseModel):
+    html_content:str

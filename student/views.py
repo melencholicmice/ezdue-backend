@@ -2,7 +2,7 @@ import jwt
 from os import getenv
 from datetime import datetime, timedelta
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from student.msal_plugin import MsLoginPlugin
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -10,14 +10,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from student.models import Student
 from department.models import DepartmentStudentsMapping, Department
-from utils.validator import ValidateSchema
+from utils.validator import ValidateSchema, TemplateVariables
 from utils.auth import StudentValidator
 from student.schema import (
     StudentLoginSchema,
     StudentLoginBypassSchema,
     GenerateNoDueCertificateSchema
 )
-
+from jinja2 import Template
 
 class StudentLogin(APIView):
     def __init__(self):
@@ -195,8 +195,18 @@ class GenerateNoDueCertificate(APIView):
             response.status_code = 401
             return response
 
-        # :TODO: Generate certificate
+        variable_data = {
+            "student_first_name":mapping.student.first_name,
+            "student_last_name":mapping.student.last_name,
+            "student_academic_program":mapping.student.academic_program,
+            "student_institute_email":mapping.student.institute_email,
+            "student_joining_year":mapping.student.joining_year,
+            "student_leaving_year":mapping.student.leaving_year,
+            "department_name":mapping.department.name,
+            "department_email":mapping.department.email,
+        }
 
-        response.data = {"message":"Your certificate is being generated please check your vault"}
-        response.status_code = 201
-        return response
+        template = Template(mapping.department.certificate_pdf_template)
+        rendered_html = template.render(TemplateVariables.get_variable_data_from_mapping(mapping=mapping))
+
+        return HttpResponse(rendered_html)

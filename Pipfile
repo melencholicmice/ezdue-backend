@@ -11,6 +11,7 @@ djangorestframework = "*"
 pydantic = "*"
 pyjwt = "*"
 django-cors-headers = "*"
+jinja2 = "*"
 
 [dev-packages]
 

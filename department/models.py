@@ -12,6 +12,8 @@ class Department(TimestampMixin):
 
     email = models.EmailField(null=False)
 
+    certificate_pdf_template = models.TextField(null=False)
+
     def __str__(self):
         return self.name
 
