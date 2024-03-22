@@ -43,7 +43,7 @@ class Due(TimestampMixin):
     payment_url = models.URLField(null=True,default=None)
 
 
-class DueResponse(models.Model):
+class DueResponse(TimestampMixin):
 
     id = models.UUIDField(primary_key=True, default=uuid4)
 
@@ -58,7 +58,7 @@ class DueResponse(models.Model):
     status = models.CharField(max_length=16, choices=[(status.value, status.name) for status in ResponseStatus])
 
 
-class RazorpayPayments(models.Model):
+class RazorpayPayments(TimestampMixin):
 
     id = models.UUIDField(primary_key=True, default=uuid4)
 

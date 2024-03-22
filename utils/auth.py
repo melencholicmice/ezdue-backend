@@ -19,7 +19,7 @@ class DepartmentValidator:
                 return response
 
 
-            token = request.COOKIES.get('Authorization')
+            token = request.headers.get('Authorization')
 
             if not token:
                 response.data = {"message":"You are unauthenticated. Please log in first."}
@@ -70,7 +70,7 @@ class StudentValidator:
                 return response
 
 
-            token = request.COOKIES.get('Authorization')
+            token = request.headers.get('Authorization')
 
             if not token:
                 response.data = {"message":"You are unauthenticated. Please log in first."}

@@ -28,7 +28,7 @@ class StudentLogin(APIView):
 
     def get(self,request):
         response = Response()
-        token = request.COOKIES.get('Authorization')
+        token = request.headers.get('Authorization')
         correct_token = False
 
         if token:
@@ -94,7 +94,7 @@ class StudentLogin(APIView):
 
         try:
             token = jwt.encode(payload, getenv("COOKIE_ENCRYPTION_SECRET") or "fallback_secret", algorithm='HS256')
-            response.set_cookie(key='Authorization', value=token, httponly=True, samesite=None)
+            response.set_cookie('Authorization',token)
             response.data = {"message":"login successful"}
             response.status_code = 200
         except Exception as e:
