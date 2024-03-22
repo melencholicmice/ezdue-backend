@@ -4,6 +4,13 @@ from student.models import Student
 from department.models import DepartmentUser
 from rest_framework.response import Response
 
+def split_bearer(token):
+    token_parts = token.split(" ")
+    if len(token_parts) == 2:
+        return token_parts[1]
+    else:
+        return token_parts[0]
+
 class DepartmentValidator:
     def __init__(self,*args,**kwargs):
         pass
@@ -19,7 +26,7 @@ class DepartmentValidator:
                 return response
 
 
-            token = request.headers.get('Authorization')
+            token = split_bearer(request.headers.get('Authorization'))
 
             if not token:
                 response.data = {"message":"You are unauthenticated. Please log in first."}
@@ -70,7 +77,7 @@ class StudentValidator:
                 return response
 
 
-            token = request.headers.get('Authorization')
+            token = split_bearer(request.headers.get('Authorization'))
 
             if not token:
                 response.data = {"message":"You are unauthenticated. Please log in first."}
