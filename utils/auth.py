@@ -26,13 +26,14 @@ class DepartmentValidator:
                 return response
 
 
-            token = split_bearer(request.headers.get('Authorization'))
+            token = request.headers.get('Authorization')
 
             if not token:
                 response.data = {"message":"You are unauthenticated. Please log in first."}
                 response.status_code=401
                 return response
 
+            token = split_bearer(token=token)
 
             try:
                 payload = jwt.decode(token, os.getenv("COOKIE_ENCRYPTION_SECRET") or "fallback_secret", algorithms='HS256')
@@ -77,13 +78,14 @@ class StudentValidator:
                 return response
 
 
-            token = split_bearer(request.headers.get('Authorization'))
+            token = request.headers.get('Authorization')
 
             if not token:
                 response.data = {"message":"You are unauthenticated. Please log in first."}
                 response.status_code=401
                 return response
 
+            token = split_bearer(token=token)
 
             try:
                 payload = jwt.decode(token, os.getenv("COOKIE_ENCRYPTION_SECRET") or "fallback_secret", algorithms='HS256')
