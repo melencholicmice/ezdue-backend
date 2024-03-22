@@ -20,6 +20,10 @@ class ResponseStatus(Enum):
     ACCEPTED = "accepted"
     REJECTED = "rejected"
 
+class ProcessDueResponseTypes(Enum):
+    ACCEPT = "accept"
+    REJECT = "reject"
+
 class Due(TimestampMixin):
 
     id = models.UUIDField(primary_key=True, default=uuid4)
@@ -35,6 +39,8 @@ class Due(TimestampMixin):
     status = models.CharField(max_length=16, choices=[(status.value, status.name) for status in DueStatus])
 
     due_date = models.DateTimeField(null=False)
+
+    payment_url = models.URLField(null=True,default=None)
 
 
 class DueResponse(models.Model):

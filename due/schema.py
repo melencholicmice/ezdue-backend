@@ -1,19 +1,20 @@
 from uuid import UUID
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, validator, HttpUrl
-from due.models import ResponseStatus, ResponseMode
+from pydantic import BaseModel, validator, HttpUrl, Field
+from due.models import ResponseStatus, ResponseMode, ProcessDueResponseTypes
 
 class CreateDueSchema(BaseModel):
     student_rollnumber:str
     amount:int
     reason:str
     due_date: datetime
+    payment_url: Optional[HttpUrl] = Field(default=None)
 
 class CreateDueResponseSchema(BaseModel):
     due_id: UUID
-    payment_proof_file: Optional[HttpUrl] = None
-    cancellation_reason: Optional[str] = None
+    payment_proof_file: Optional[HttpUrl] = Field(default=None)
+    cancellation_reason: Optional[str] = Field(default=None)
     mode: ResponseMode
 
     @validator("mode")
@@ -34,3 +35,7 @@ class CreateDueResponseSchema(BaseModel):
             if cancellation_reason is None:
                 raise ValueError("cancellation reason is required in cancellation request")
         return v
+
+class ProcessDueRequestSchema(BaseModel):
+    due_request_id:UUID
+    response: ProcessDueResponseTypes

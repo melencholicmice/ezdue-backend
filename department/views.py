@@ -72,7 +72,10 @@ class DepartmentLogin(APIView):
         token = jwt.encode(payload, os.getenv("COOKIE_ENCRYPTION_SECRET") or "fallback_secret", algorithm='HS256')
 
         response.set_cookie(key='Authorization', value=token, httponly=True, samesite=None)
-        response.data = {"message":"Login Succesful"}
+        response.data = {
+            "message":"Login Succesful",
+            "token":token
+        }
         return response
 
 class AddStudentToDepartment(APIView):

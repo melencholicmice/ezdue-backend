@@ -1,14 +1,26 @@
 import traceback
-from due.models import Due, DueStatus, DueResponse, ResponseStatus
+from due.models import (
+    Due,
+    DueStatus,
+    DueResponse,
+    ResponseMode,
+    ResponseStatus,
+    ProcessDueResponseTypes
+)
 from student.models import Student
 from django.shortcuts import render
 from django.core.serializers import serialize
-from due.schema import CreateDueSchema, CreateDueResponseSchema
+from due.schema import (
+    CreateDueSchema,
+    CreateDueResponseSchema,
+    ProcessDueRequestSchema
+)
 from utils.validator import ValidateSchema
 from utils.auth import DepartmentValidator, StudentValidator
 from rest_framework.views import APIView, Response
 from utils.crypto import encode_cursor, decode_cursor
 from django.db.models import Count
+from django.db import transaction
 
 class CreateDue(APIView):
     @ValidateSchema(CreateDueSchema)
@@ -22,6 +34,11 @@ class CreateDue(APIView):
         amount = request.data["amount"]
         reason = request.data["reason"]
         due_date = request.data["due_date"]
+        payment_url = request.data.get('payment_url')
+
+        if not payment_url:
+            payment_url = request.department_user.department.default_payment_url
+
         response = Response()
 
         try:
@@ -43,8 +60,9 @@ class CreateDue(APIView):
                 department = department,
                 amount = amount,
                 reason = reason,
-                status = DueStatus.PENDING,
-                due_date = due_date
+                status = DueStatus.PENDING.value,
+                due_date = due_date,
+                payment_url=payment_url
             )
 
             new_due.save()
@@ -54,7 +72,6 @@ class CreateDue(APIView):
             print(f"{str(e)}\n{traceback.format_exception(e)}")
             response.data = {"message": "some error occured, Please try again"}
             response.status_code = 500
-
 
         return response
 
@@ -90,7 +107,7 @@ class CreateDueResponse(APIView):
                 response_mode=response_mode,
                 payment_proof_file=payment_proof_file,
                 cancellation_reason=cancellation_reason,
-                status=ResponseStatus.ON_HOLD
+                status= ResponseStatus.ON_HOLD.value
             )
             response.data = {"message": "response succesfully created"}
             response.status_code = 201
@@ -99,3 +116,65 @@ class CreateDueResponse(APIView):
             response.status_code = 500
 
         return response
+
+class ProcessDueRequest(APIView):
+    @DepartmentValidator()
+    @ValidateSchema(ProcessDueRequestSchema)
+    def post(self,request):
+        due_request_id = request.data.get("due_request_id")
+        response_status:ProcessDueResponseTypes = request.data.get("response")
+        response = Response()
+
+        try:
+            due_response_instance = DueResponse.objects.get(id=due_request_id)
+        except DueResponse.DoesNotExist as e:
+            response.data = {"message":"Invalid due response id"}
+            response.status_code = 404
+            return response
+        except Exception as e:
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        if response_status == ProcessDueResponseTypes.REJECT.value:
+            if due_response_instance.status == str(ResponseStatus.REJECTED):
+                response.data = {"message":"Due request was already rejected"}
+                response.status_code = 200
+            else:
+                try:
+                    due_response_instance.status = ResponseStatus.REJECTED.value
+                    due_response_instance.save()
+                    response.data = {"message":"Due request rejected"}
+                    response.status_code = 200
+                except Exception as e:
+                    response.data = {"message":"Internal server error"}
+                    response.status_code = 500
+
+            return response
+        else:
+            
+            try:
+                due_instance = Due.objects.get(id=due_response_instance.due.id)
+            except Exception as e:
+                response.data = {"message":"Due not found"}
+                response.status_code = 404
+                return response
+
+
+            sid = transaction.savepoint()
+            try:
+                due_response_instance.status = ResponseStatus.ACCEPTED.value
+                due_instance.status = DueStatus.PAID.value
+                due_instance.save()
+                due_response_instance.save()
+                transaction.savepoint_commit(sid)
+                response.data = {"message":"Due request accepted"}
+                response.status_code = 200
+                return response
+            except Exception as e:
+                print(str(e))
+                transaction.savepoint_rollback(sid)
+                response.data = {"message":"Internal server error, Due request not accepted"}
+                response.status_code = 500
+                return response
+

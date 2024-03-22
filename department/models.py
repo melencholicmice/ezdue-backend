@@ -14,6 +14,8 @@ class Department(TimestampMixin):
 
     certificate_pdf_template = models.TextField(null=False)
 
+    default_payment_url = models.URLField(null=True, default=None)
+
     def __str__(self):
         return self.name
 
