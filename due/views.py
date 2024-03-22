@@ -152,7 +152,7 @@ class ProcessDueRequest(APIView):
 
             return response
         else:
-            
+
             try:
                 due_instance = Due.objects.get(id=due_response_instance.due.id)
             except Exception as e:
@@ -164,7 +164,10 @@ class ProcessDueRequest(APIView):
             sid = transaction.savepoint()
             try:
                 due_response_instance.status = ResponseStatus.ACCEPTED.value
-                due_instance.status = DueStatus.PAID.value
+                if due_response_instance.response_mode == ResponseMode.EXTERNAL_PAYMENT.value:
+                    due_instance.status = DueStatus.PAID.value
+                elif due_response_instance.response_mode == ResponseMode.REQUEST_CANCELLATION.value:
+                    due_instance.status = DueStatus.CANCELLED.value
                 due_instance.save()
                 due_response_instance.save()
                 transaction.savepoint_commit(sid)
