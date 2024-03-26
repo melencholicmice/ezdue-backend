@@ -12,9 +12,10 @@ from department.models import (
     DepartmentUser,
     DepartmentStudentsMapping
 )
-from due.models import Due
+from due.models import Due, DueProofs
 from student.models import Student
 from utils.auth import DepartmentValidator
+from utils.misc import convert_human_readable_date_time
 from utils.validator import ValidateSchema, TemplateVariables
 from department.schema import (
     LoginSchema,
@@ -201,7 +202,6 @@ class GetDepartmentStudents(APIView):
         response.status_code = 200
         return response
 
-
 class GetDues(APIView):
     DEFAULT_LIMIT = 10
     @DepartmentValidator()
@@ -256,6 +256,7 @@ class GetDues(APIView):
 
         for obj in query:
             data.append({
+                'id':obj.id,
                 'amount':obj.amount,
                 'due_date':obj.due_date,
                 'roll_number':obj.student.roll_number,
@@ -350,6 +351,54 @@ class EditCertificateHTMLTemplate(APIView):
             response.status_code = 500
 
         return response
+
+class GetDueById(APIView):
+
+    @DepartmentValidator()
+    def get(self, request, due_id, format = None):
+        response = Response()
+        try:
+            due_obj = Due.objects.get(id=due_id)
+        except Due.DoesNotExist as e:
+            response.data = {"message":"this due does not exists"}
+            response.status_code = 404
+            return response
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, contact admin"}
+            response.status_code = 500
+            return response
+
+        try:
+            due_proofs = DueProofs.objects.filter(due=due_obj)
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, contact admin"}
+            response.status_code = 500
+            return response
+
+        due_proof_list = []
+
+        for proof in due_proofs:
+            due_proof_list.append(proof.proof_media_url)
+
+        response.data  = {
+            'id' : due_obj.id,
+            'amount': due_obj.amount,
+            'department' : due_obj.department.name,
+            'due_date': convert_human_readable_date_time(due_obj.due_date),
+            'proof': due_proof_list,
+            'reason': due_obj.reason,
+            'created_at': convert_human_readable_date_time(due_obj.created_at),
+            'payment_url':due_obj.payment_url,
+            'status': due_obj.status,
+            'student_roll_number':due_obj.student.roll_number,
+            'student_name': due_obj.student.first_name + " " + due_obj.student.last_name
+        }
+        response.status_code = 200
+
+        return response
+
 
 def get_template_variables(request):
     if request.method == 'GET':

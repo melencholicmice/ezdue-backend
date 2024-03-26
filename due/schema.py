@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, validator, HttpUrl, Field
 from due.models import ResponseStatus, ResponseMode, ProcessDueResponseTypes
@@ -10,6 +10,7 @@ class CreateDueSchema(BaseModel):
     reason:str
     due_date: datetime
     payment_url: Optional[HttpUrl] = Field(default=None)
+    due_proofs: List[HttpUrl]
 
 class CreateDueResponseSchema(BaseModel):
     due_id: UUID

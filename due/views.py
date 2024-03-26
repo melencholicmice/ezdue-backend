@@ -1,11 +1,12 @@
 import traceback
 from due.models import (
     Due,
+    DueProofs,
     DueStatus,
     DueResponse,
     ResponseMode,
     ResponseStatus,
-    ProcessDueResponseTypes
+    ProcessDueResponseTypes,
 )
 from student.models import Student
 from django.shortcuts import render
@@ -35,11 +36,17 @@ class CreateDue(APIView):
         reason = request.data["reason"]
         due_date = request.data["due_date"]
         payment_url = request.data.get('payment_url')
+        due_proofs = request.data.get('due_proofs')
+        response = Response()
+
+        if not due_proofs or len(due_proofs) == 0:
+            print(due_proofs)
+            response.data = {"message": "No due proof link, cannot create due"}
+            response.status_code = 403
+            return response
 
         if not payment_url:
             payment_url = request.department_user.department.default_payment_url
-
-        response = Response()
 
         try:
             student = Student.objects.get(roll_number=student_rollnumber)
@@ -66,7 +73,25 @@ class CreateDue(APIView):
             )
 
             new_due.save()
-            response.data = {"message":"Due successfully created"}
+            for link in due_proofs:
+                try:
+                    proof_obj = DueProofs.objects.create(
+                        due = new_due,
+                        proof_media_url = link
+                    )
+                    proof_obj.save()
+                except Exception as e:
+                    print(str(e))
+
+            response.data = {
+                "message":"Due successfully created",
+                "data": {
+                    "id": new_due.id,
+                    "amount":new_due.amount,
+                    "reason":new_due.reason,
+                    "due_date":new_due.due_date,
+                }
+            }
             response.status_code = 201
         except Exception as e:
             print(f"{str(e)}\n{traceback.format_exception(e)}")

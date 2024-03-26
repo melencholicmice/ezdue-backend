@@ -63,3 +63,10 @@ class RazorpayPayments(TimestampMixin):
     id = models.UUIDField(primary_key=True, default=uuid4)
 
     due_response = models.ForeignKey(DueResponse, on_delete=models.CASCADE)
+
+class DueProofs(TimestampMixin):
+
+    due = models.ForeignKey(Due, on_delete=models.CASCADE)
+
+    proof_media_url = models.URLField(null=False)
+    
