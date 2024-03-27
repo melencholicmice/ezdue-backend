@@ -19,10 +19,7 @@ class ValidateSchema:
                     self.schema(**request.data)
                 except ValidationError as e:
                     response = Response()
-                    response.data = {
-                        "error_count": e.error_count(),
-                        "error":loads(e.json())
-                    }
+                    response.data = loads(e.json())
                     response.status_code = 403
                     return response
             try:
