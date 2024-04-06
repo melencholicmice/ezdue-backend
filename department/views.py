@@ -16,7 +16,7 @@ from due.models import (
     Due,
     DueProofs,
     DueResponse,
-    ResponseStatus
+    ResponseStatus,
 )
 from student.models import Student
 from utils.auth import DepartmentValidator
@@ -415,14 +415,6 @@ class GetDepartmentRequests(APIView):
     DEFAULT_LIMIT = 10
     @DepartmentValidator()
     def get(self,request):
-        limit = int(request.query_params.get('limit', self.DEFAULT_LIMIT))
-        cursor_value = request.query_params.get('cursor', None)
-
-        if cursor_value is not None:
-            cursor = decode_cursor(cursor_value)
-        else:
-            cursor = 0
-
         response = Response()
         filters = {}
 
@@ -444,8 +436,6 @@ class GetDepartmentRequests(APIView):
             filters['created_at__gt'] = created_at_gt
         if created_at_lt:
             filters['created_at__lt'] = created_at_lt
-        if created_at_gt:
-            filters['created_at__gt'] = created_at_gt
 
         filters['status'] = status
 
@@ -453,7 +443,7 @@ class GetDepartmentRequests(APIView):
             count_query = DueResponse.objects.filter(**filters).aggregate(total_size=Count('id'))
             total_size = count_query['total_size']
 
-            query = DueResponse.objects.filter(**filters)[cursor:cursor+limit]
+            query = DueResponse.objects.filter(**filters)
             print(query.query)
             data = []
         except Exception as e:
@@ -479,18 +469,54 @@ class GetDepartmentRequests(APIView):
                 'payment_proof_file':obj.payment_proof_file,
             })
 
-        next_cursor = cursor + limit
-        previous_cursor = max(cursor - limit, 0)
-
-        next_url = f"?limit={limit}&cursor={encode_cursor(next_cursor)}" if next_cursor < total_size else None
-        previous_url = f"?limit={limit}&cursor={encode_cursor(previous_cursor)}" if cursor > 0 else None
-        if total_size == 0:
-            next_url = previous_url = None
         response.data = {
             "total": total_size,
             "data": data,
-            "next": next_url,
-            "previous": previous_url
         }
         response.status_code = 200
         return response
+
+class GetDepartmentStudent(APIView):
+
+    @DepartmentValidator()
+    def get(self,request):
+        role = request.query_params.get('role', None)
+        academic_program = request.query_params.get('academic_program',None)
+        joining_year = request.query_params.get('joining_year',None)
+
+        filters = {}
+        if role:
+            filters['student__role_number'] = role
+        if academic_program:
+            filters['student__academic_program'] = academic_program
+        if joining_year:
+            filters['student__joining_year'] = joining_year
+
+        response = Response()
+
+        try:
+            students = DepartmentStudentsMapping.objects.filter(department=request.department_user.department,student__is_active=True,**filters)
+        except:
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        data = []
+        for obj in students:
+            data.append({
+                'roll_number':obj.student.roll_number,
+                'first_name':obj.student.first_name,
+                'last_name':obj.student.last_name,
+                'email':obj.student.institute_email,
+                'academic_program':obj.student.academic_program,
+                'role':obj.student.role,
+                'allow_certificate_generation':obj.allow_certificate_generation,
+            })
+
+        response.data = {
+            "total": len(data),
+            "data": data,
+        }
+
+        return response
+
