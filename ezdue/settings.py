@@ -27,8 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     # staging host
-    '2o811d4o9f.pythonanywhere.com',
-    'localhost'
+    # '2o811d4o9f.pythonanywhere.com',
+    # 'localhost'
 ]
 
 CORS_ALLOWED_ORIGINS = [

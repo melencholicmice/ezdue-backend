@@ -12,7 +12,12 @@ from department.models import (
     DepartmentUser,
     DepartmentStudentsMapping
 )
-from due.models import Due, DueProofs
+from due.models import (
+    Due,
+    DueProofs,
+    DueResponse,
+    ResponseStatus
+)
 from student.models import Student
 from utils.auth import DepartmentValidator
 from utils.misc import convert_human_readable_date_time
@@ -405,3 +410,87 @@ def get_template_variables(request):
         return JsonResponse({"variables":TemplateVariables.get_available_variables()},status=200)
     else:
         return JsonResponse({"message":"This method is not allowed"},status=405)
+
+class GetDepartmentRequests(APIView):
+    DEFAULT_LIMIT = 10
+    @DepartmentValidator()
+    def get(self,request):
+        limit = int(request.query_params.get('limit', self.DEFAULT_LIMIT))
+        cursor_value = request.query_params.get('cursor', None)
+
+        if cursor_value is not None:
+            cursor = decode_cursor(cursor_value)
+        else:
+            cursor = 0
+
+        response = Response()
+        filters = {}
+
+        # Getting and building filters
+        role = request.query_params.get('role', None)
+        academic_program = request.query_params.get('academic_program',None)
+        created_at_gt = request.query_params.get('created_at_gt',None)
+        created_at_lt = request.query_params.get('created_at_lt',None)
+        status = request.query_params.get('status',ResponseStatus.ON_HOLD)
+
+        filters['due__department__id'] = request.department_user.department.id
+        filters['due__student__is_active'] = True
+
+        if role:
+            filters['due__student__role'] = role
+        if academic_program:
+            filters['due__student__academic_program'] = academic_program
+        if created_at_gt:
+            filters['created_at__gt'] = created_at_gt
+        if created_at_lt:
+            filters['created_at__lt'] = created_at_lt
+        if created_at_gt:
+            filters['created_at__gt'] = created_at_gt
+
+        filters['status'] = status
+
+        try:
+            count_query = DueResponse.objects.filter(**filters).aggregate(total_size=Count('id'))
+            total_size = count_query['total_size']
+
+            query = DueResponse.objects.filter(**filters)[cursor:cursor+limit]
+            print(query.query)
+            data = []
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        for obj in query:
+            data.append({
+                'id': obj.id,
+                'due_id':obj.due.id,
+                'due_amount':obj.due.amount,
+                'due_reason':obj.due.reason,
+                'student_name': obj.due.student.first_name + " " + obj.due.student.last_name,
+                'academic_program': obj.due.student.academic_program,
+                'role': obj.due.student.role,
+                'student_roll_number': obj.due.student.roll_number,
+                'response_mode': obj.response_mode,
+                'status': obj.status,
+                'created_at': convert_human_readable_date_time(obj.created_at),
+                'cancellation_reason':obj.cancellation_reason,
+                'payment_proof_file':obj.payment_proof_file,
+            })
+
+        next_cursor = cursor + limit
+        previous_cursor = max(cursor - limit, 0)
+
+        next_url = f"?limit={limit}&cursor={encode_cursor(next_cursor)}" if next_cursor < total_size else None
+        previous_url = f"?limit={limit}&cursor={encode_cursor(previous_cursor)}" if cursor > 0 else None
+        if total_size == 0:
+            next_url = previous_url = None
+        response.data = {
+            "total": total_size,
+            "data": data,
+            "next": next_url,
+            "previous": previous_url
+        }
+        response.status_code = 200
+        return response

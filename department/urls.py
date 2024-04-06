@@ -7,6 +7,7 @@ from department.views import (
     AddStudentToDepartment,
     EditCertificateHTMLTemplate,
     ToggleCertificateGenerationPermission,
+    GetDepartmentRequests,
     get_template_variables
 )
 
@@ -18,5 +19,6 @@ department_endpoints = [
     path("students", GetDepartmentStudents.as_view(), name="Get students in a Department"),
     path("switch-certificate-generation-permission", ToggleCertificateGenerationPermission.as_view(), name="Toggle certificate generation permission"),
     path("edit-certificate-tempate", EditCertificateHTMLTemplate.as_view(), name="Edit Certificate Template"),
-    path("get-template-variables", get_template_variables, name="Get Available Template Variables")
+    path("get-template-variables", get_template_variables, name="Get Available Template Variables"),
+    path("get-department-requests", GetDepartmentRequests.as_view(), name="Get Due Requests")
 ]
