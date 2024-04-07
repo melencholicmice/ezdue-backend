@@ -41,7 +41,16 @@ class StudentLogin(APIView):
                 pass
 
         if correct_token:
-            response.data  = {"message":"Login successful."}
+            response.data  = {
+                "message":"Login successful.",
+                "data":{
+                    "program":student.academic_program,
+                    "roll_number":student.roll_number,
+                    "email":student.institute_email,
+                    "joining_year":student.joining_year,
+                    "role":student.role
+                }
+            }
             response.status_code = 200
             return response
 
