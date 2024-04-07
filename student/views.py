@@ -130,7 +130,10 @@ class StudentLoginBypass(APIView):
         try:
             token = jwt.encode(payload, getenv("COOKIE_ENCRYPTION_SECRET") or "fallback_secret", algorithm='HS256')
             response.set_cookie(key='Authorization', value=token, httponly=True, samesite=None)
-            response.data = {"message":"login successful"}
+            response.data = {
+                "message":"login successful",
+                "token":token
+            }
             response.status_code = 200
         except Exception as e:
             print(str(e))
