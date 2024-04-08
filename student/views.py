@@ -17,6 +17,8 @@ from student.schema import (
     StudentLoginBypassSchema,
     GenerateNoDueCertificateSchema
 )
+from django.db.models import Count
+from due.models import Due, DueStatus
 from jinja2 import Template
 
 class StudentLogin(APIView):
@@ -160,9 +162,18 @@ class StudentDepartmentData(APIView):
 
         department_data_list = []
         for obj in department_data:
+            pending_dues = Due.objects.filter(
+                student__roll_number = request.student.roll_number,
+                department__id = obj.id,
+                status=DueStatus.PENDING
+            ).aggregate(total_size=Count('id'))
+            print(pending_dues)
+
             data_obj = {
                 "department_name":obj.department.name,
-                "allow_certificate_generation":obj.allow_certificate_generation
+                "allow_certificate_generation":obj.allow_certificate_generation,
+                "id":obj.id,
+                "total_pending_dues":pending_dues['total_size']
             }
             department_data_list.append(data_obj)
 

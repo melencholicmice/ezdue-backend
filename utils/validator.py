@@ -46,7 +46,7 @@ class TemplateVariables:
 
     @classmethod
     def get_available_variables(cls):
-        return [
+        variables = [
             "student_first_name",
             "student_last_name",
             "student_academic_program",
@@ -56,6 +56,18 @@ class TemplateVariables:
             "department_name",
             "department_email",
         ]
+
+        data = []
+        index = 1
+        for variable in variables:
+            data.append({
+                "name": variable,
+                "id":index
+            })
+            index += 1
+
+        return data
+
 
     @classmethod
     def get_variables_from_student_and_department(cls,student,department):
