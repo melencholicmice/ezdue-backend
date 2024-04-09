@@ -50,7 +50,8 @@ class StudentLogin(APIView):
                     "roll_number":student.roll_number,
                     "email":student.institute_email,
                     "joining_year":student.joining_year,
-                    "role":student.role
+                    "role":student.role,
+                    "full_name":student.first_name + " " + student.last_name,
                 }
             }
             response.status_code = 200
