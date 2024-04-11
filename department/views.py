@@ -486,7 +486,7 @@ class GetDepartmentStudent(APIView):
 
         filters = {}
         if role:
-            filters['student__role_number'] = role
+            filters['student__role'] = role
         if academic_program:
             filters['student__academic_program'] = academic_program
         if joining_year:
@@ -497,7 +497,7 @@ class GetDepartmentStudent(APIView):
         try:
             students = DepartmentStudentsMapping.objects.filter(department=request.department_user.department,student__is_active=True,**filters)
         except:
-            response.data = {"message":"Internal server error"}
+            response.data = {"message":"Internal server error q"}
             response.status_code = 500
             return response
 
