@@ -17,9 +17,15 @@ from student.schema import (
     StudentLoginBypassSchema,
     GenerateNoDueCertificateSchema
 )
+from due.models import (
+    DueResponse,
+    DueStatus,
+    DueProofs
+)
 from django.db.models import Count
 from due.models import Due, DueStatus
 from jinja2 import Template
+from utils.misc import convert_human_readable_date_time
 
 class StudentLogin(APIView):
     def __init__(self):
@@ -176,7 +182,7 @@ class StudentDepartmentData(APIView):
             data_obj = {
                 "department_name":obj.department.name,
                 "allow_certificate_generation":obj.allow_certificate_generation,
-                "id":obj.id,
+                "id":obj.department.id,
                 "total_pending_dues":pending_dues['total_size']
             }
             department_data_list.append(data_obj)
@@ -237,3 +243,151 @@ class GenerateNoDueCertificate(APIView):
         rendered_html = template.render(TemplateVariables.get_variable_data_from_mapping(mapping=mapping))
 
         return HttpResponse(rendered_html)
+
+class StudentDues(APIView):
+
+    @StudentValidator()
+    def get(self,request):
+
+        response = Response()
+        filters = {}
+        due_date = request.query_params.get('due_date', None)
+        status = request.query_params.get('status', None)
+
+        filters['student__roll_number'] = request.student.roll_number
+        if due_date:
+            filters['due_date'] = due_date
+        if status:
+            filters['status'] = status
+
+        try:
+            count_query = Due.objects.filter(**filters).aggregate(total_size=Count('id'))
+            total_size = count_query['total_size']
+            query = Due.objects.filter(**filters)
+            print(query.query)
+            data = []
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        for obj in query:
+            request_sent = False
+            resp = DueResponse.objects.filter(due=obj)
+            if len(resp) > 0:
+                request_sent = True
+
+            data.append({
+                'request_sent':request_sent,
+                'id':obj.id,
+                'amount':obj.amount,
+                'due_date':obj.due_date,
+                'roll_number':obj.student.roll_number,
+                'status':obj.status,
+                'reason':obj.reason,
+                'created_at':obj.created_at,
+            })
+
+        response.data = {
+            "total": total_size,
+            "data": data
+        }
+        response.status_code = 200
+        return response
+
+class GetStudentRequests(APIView):
+
+    @StudentValidator()
+    def get(self,request):
+        response = Response()
+        filters = {}
+
+
+        status = request.query_params.get('status',None)
+        if status:
+            filters['status'] = status
+
+        try:
+            count_query = DueResponse.objects.filter(**filters).aggregate(total_size=Count('id'))
+            total_size = count_query['total_size']
+
+            query = DueResponse.objects.filter(**filters)
+            print(query.query)
+            data = []
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error"}
+            response.status_code = 500
+            return response
+
+        for obj in query:
+            data.append({
+                'id': obj.id,
+                'due_id':obj.due.id,
+                'due_amount':obj.due.amount,
+                'due_reason':obj.due.reason,
+                'student_name': obj.due.student.first_name + " " + obj.due.student.last_name,
+                'academic_program': obj.due.student.academic_program,
+                'role': obj.due.student.role,
+                'student_roll_number': obj.due.student.roll_number,
+                'response_mode': obj.response_mode,
+                'status': obj.status,
+                'created_at': convert_human_readable_date_time(obj.created_at),
+                'cancellation_reason':obj.cancellation_reason,
+                'payment_proof_file':obj.payment_proof_file,
+            })
+
+        response.data = {
+            "total": total_size,
+            "data": data,
+        }
+        response.status_code = 200
+        return response
+
+class GetDueById(APIView):
+
+    @StudentValidator()
+    def get(self, request, due_id, format = None):
+        response = Response()
+        try:
+            due_obj = Due.objects.get(id=due_id)
+        except Due.DoesNotExist as e:
+            response.data = {"message":"this due does not exists"}
+            response.status_code = 404
+            return response
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, contact admin"}
+            response.status_code = 500
+            return response
+
+        try:
+            due_proofs = DueProofs.objects.filter(due=due_obj)
+        except Exception as e:
+            print(str(e))
+            response.data = {"message":"Internal server error, contact admin"}
+            response.status_code = 500
+            return response
+
+        due_proof_list = []
+
+        for proof in due_proofs:
+            due_proof_list.append(proof.proof_media_url)
+
+        response.data  = {
+            'id' : due_obj.id,
+            'amount': due_obj.amount,
+            'department' : due_obj.department.name,
+            'due_date': convert_human_readable_date_time(due_obj.due_date),
+            'proof': due_proof_list,
+            'reason': due_obj.reason,
+            'created_at': convert_human_readable_date_time(due_obj.created_at),
+            'payment_url':due_obj.payment_url,
+            'status': due_obj.status,
+            'student_roll_number':due_obj.student.roll_number,
+            'student_name': due_obj.student.first_name + " " + due_obj.student.last_name
+        }
+        response.status_code = 200
+
+        return response
