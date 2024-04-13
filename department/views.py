@@ -221,7 +221,7 @@ class GetDues(APIView):
         due_date = request.query_params.get('due_date', None)
         due_date_lt = request.query_params.get('due_date_lt', None)
         due_date_gt = request.query_params.get('due_date_gt', None)
-
+        status = request.query_params.get('status', None)
         filters['department__id'] = request.department_user.department.id
         filters['student__is_active'] = True
 
@@ -237,6 +237,8 @@ class GetDues(APIView):
             filters['due_date__gt'] = due_date_gt
         if not due_date and due_date_lt:
             filters['due_date__lt'] = due_date_lt
+        if status:
+            filters['status'] = status
 
         try:
             count_query = Due.objects.filter(**filters).aggregate(total_size=Count('id'))
@@ -406,10 +408,9 @@ class GetDepartmentRequests(APIView):
         academic_program = request.query_params.get('academic_program',None)
         created_at_gt = request.query_params.get('created_at_gt',None)
         created_at_lt = request.query_params.get('created_at_lt',None)
-        status = request.query_params.get('status',ResponseStatus.ON_HOLD)
+        status = request.query_params.get('status',ResponseStatus.ON_HOLD.value)
 
         filters['due__department__id'] = request.department_user.department.id
-        filters['due__student__is_active'] = True
 
         if role:
             filters['due__student__role'] = role
@@ -419,15 +420,15 @@ class GetDepartmentRequests(APIView):
             filters['created_at__gt'] = created_at_gt
         if created_at_lt:
             filters['created_at__lt'] = created_at_lt
-
-        filters['status'] = status
+        if status:
+            filters['status'] = status
 
         try:
             count_query = DueResponse.objects.filter(**filters).aggregate(total_size=Count('id'))
             total_size = count_query['total_size']
 
             query = DueResponse.objects.filter(**filters)
-            print(query.query)
+            print(filters)
             data = []
         except Exception as e:
             print(str(e))

@@ -302,7 +302,9 @@ class GetStudentRequests(APIView):
     @StudentValidator()
     def get(self,request):
         response = Response()
-        filters = {}
+        filters = {
+            'due__student__roll_number':request.student.roll_number
+        }
 
 
         status = request.query_params.get('status',None)
