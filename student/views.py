@@ -280,6 +280,7 @@ class StudentDues(APIView):
 
             data.append({
                 'request_sent':request_sent,
+                'department_name':obj.department.name,
                 'id':obj.id,
                 'amount':obj.amount,
                 'due_date':obj.due_date,

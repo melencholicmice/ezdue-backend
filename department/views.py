@@ -208,16 +208,8 @@ class GetDepartmentStudents(APIView):
         return response
 
 class GetDues(APIView):
-    DEFAULT_LIMIT = 10
     @DepartmentValidator()
     def get(self,request):
-        limit = int(request.query_params.get('limit', self.DEFAULT_LIMIT))
-        cursor_value = request.query_params.get('cursor', None)
-
-        if cursor_value is not None:
-            cursor = decode_cursor(cursor_value)
-        else:
-            cursor = 0
 
         response = Response()
         filters = {}
@@ -250,7 +242,7 @@ class GetDues(APIView):
             count_query = Due.objects.filter(**filters).aggregate(total_size=Count('id'))
             total_size = count_query['total_size']
 
-            query = Due.objects.filter(**filters)[cursor:cursor+limit]
+            query = Due.objects.filter(**filters)
             print(query.query)
             data = []
         except Exception as e:
@@ -270,18 +262,9 @@ class GetDues(APIView):
                 'created_at':obj.created_at,
             })
 
-        next_cursor = cursor + limit
-        previous_cursor = max(cursor - limit, 0)
-
-        next_url = f"?limit={limit}&cursor={encode_cursor(next_cursor)}" if next_cursor < total_size else None
-        previous_url = f"?limit={limit}&cursor={encode_cursor(previous_cursor)}" if cursor > 0 else None
-        if total_size == 0:
-            next_url = previous_url = None
         response.data = {
             "total": total_size,
             "data": data,
-            "next": next_url,
-            "previous": previous_url
         }
         response.status_code = 200
         return response

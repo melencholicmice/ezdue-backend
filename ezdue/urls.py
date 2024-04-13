@@ -21,7 +21,7 @@ from due.urls import due_endpoints
 from department.urls import department_endpoints
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
     path('student/', include(student_endpoints)),
     path('due/', include(due_endpoints)),
     path('department/', include(department_endpoints))
